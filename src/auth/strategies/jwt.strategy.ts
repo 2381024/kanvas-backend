@@ -1,30 +1,35 @@
 // src/auth/strategies/jwt.strategy.ts
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common'; // Mungkin perlu jika validasi user diaktifkan
+import { Injectable, UnauthorizedException } from '@nestjs/common'; // Pastikan UnauthorizedException diimpor
 import { ConfigService } from '@nestjs/config';
-import { UserService } from '../../user/user.service'; // Mungkin perlu jika validasi user diaktifkan
+import { UserService } from '../../user/user.service'; // Pastikan UserService diimpor
+import { User } from '../../user/entities/user.entity'; // Pastikan User entity diimpor
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private configService: ConfigService,
-    private userService: UserService, // Inject UserService jika perlu validasi user
+    private userService: UserService, // Pastikan UserService sudah di-inject
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      // --- Gunakan getOrThrow di sini ---
       secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
     });
   }
 
-  async validate(payload: { sub: string; username: string }): Promise<any> {
-    // Opsional: Validasi apakah user masih ada di database
-    // const user = await this.userService.findOneById(payload.sub);
-    // if (!user) {
-    //   throw new UnauthorizedException('User not found');
-    // }
-    return { userId: payload.sub, username: payload.username };
+  // --- UBAH BAGIAN INI ---
+  async validate(payload: { sub: string; username: string }): Promise<User> { // Ubah Promise<any> menjadi Promise<User>
+    // 'payload.sub' berisi ID user dari token JWT
+    const user = await this.userService.findOneById(payload.sub);
+    if (!user) {
+      // Jika user dengan ID dari token tidak ditemukan di DB
+      throw new UnauthorizedException('User not found or invalid token');
+    }
+    // Kembalikan objek User entity lengkap
+    // Pastikan findOneById tidak mengembalikan password hash jika tidak perlu
+    return user; // Objek 'user' ini memiliki properti 'id'
   }
+  // -----------------------
 }

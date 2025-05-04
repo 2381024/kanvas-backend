@@ -13,5 +13,6 @@ import { AuthModule } from '../auth/auth.module'; // Impor AuthModule jika perlu
   ],
   controllers: [PortfolioController],
   providers: [PortfolioService],
+  exports: [PortfolioService]
 })
 export class PortfolioModule {}
